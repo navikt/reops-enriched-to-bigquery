@@ -89,14 +89,7 @@ object RowMapper {
             put("website_id", w.websiteId.toString())
             put("name", w.name)
             put("domain", w.domain)
-            put("share_id", JSONObject.NULL)
-            put("reset_at", JSONObject.NULL)
-            put("user_id", JSONObject.NULL)
-            put("created_at", JSONObject.NULL)
             put("updated_at", w.updatedAt.toString())
-            put("deleted_at", JSONObject.NULL)
-            put("created_by", JSONObject.NULL)
-            put("team_id", JSONObject.NULL)
         }
     }
 }

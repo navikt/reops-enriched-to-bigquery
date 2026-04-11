@@ -2,7 +2,6 @@ package no.nav.reops.bigquery
 
 import no.nav.reops.event.*
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONObject
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.UUID
@@ -172,13 +171,13 @@ class RowMapperTest {
         assertThat(row.getString("website_id")).isEqualTo("ca2a6d29-686c-428b-9d80-651eac925bdb")
         assertThat(row.getString("name")).isEqualTo("Test Website")
         assertThat(row.getString("domain")).isEqualTo("test.nav.no")
-        assertThat(row.get("share_id")).isEqualTo(JSONObject.NULL)
-        assertThat(row.get("reset_at")).isEqualTo(JSONObject.NULL)
-        assertThat(row.get("user_id")).isEqualTo(JSONObject.NULL)
-        assertThat(row.get("created_at")).isEqualTo(JSONObject.NULL)
         assertThat(row.getString("updated_at")).isEqualTo("2026-03-30T14:00:00Z")
-        assertThat(row.get("deleted_at")).isEqualTo(JSONObject.NULL)
-        assertThat(row.get("created_by")).isEqualTo(JSONObject.NULL)
-        assertThat(row.get("team_id")).isEqualTo(JSONObject.NULL)
+        assertThat(row.has("share_id")).isFalse()
+        assertThat(row.has("reset_at")).isFalse()
+        assertThat(row.has("user_id")).isFalse()
+        assertThat(row.has("created_at")).isFalse()
+        assertThat(row.has("deleted_at")).isFalse()
+        assertThat(row.has("created_by")).isFalse()
+        assertThat(row.has("team_id")).isFalse()
     }
 }
