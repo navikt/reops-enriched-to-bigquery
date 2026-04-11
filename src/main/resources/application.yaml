@@ -62,3 +62,5 @@ logging:
     org.apache.kafka.clients.NetworkClient: WARN
     org.apache.kafka.clients.Metadata: WARN
     org.apache.kafka.common.config.AbstractConfig: WARN
+    com.google.cloud.bigquery.storage.v1: WARN
+    io.grpc.netty.shaded: WARN
