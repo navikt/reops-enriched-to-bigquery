@@ -36,9 +36,6 @@ spec:
   kafka:
     pool: nav-prod
   accessPolicy:
-    outbound:
-      rules:
-        - application: reops-opensearch-instance
       external:
         - host: nav-prod-kafka-nav-prod.aivencloud.com
   env:
