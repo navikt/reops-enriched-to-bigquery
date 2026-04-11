@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class RowMapperTest {
 
@@ -12,6 +13,7 @@ class RowMapperTest {
     private val eventId = UUID.fromString("aaaaaaaa-1111-2222-3333-444444444444")
     private val visitId = UUID.fromString("bbbbbbbb-1111-2222-3333-444444444444")
     private val createdAt = Instant.parse("2026-03-30T12:00:00Z")
+    private val createdAtMicros = TimeUnit.SECONDS.toMicros(createdAt.epochSecond)
 
     private val event = EnrichedEvent(
         websiteId = websiteId,
@@ -78,7 +80,7 @@ class RowMapperTest {
         assertThat(row.getString("event_id")).isEqualTo(eventId.toString())
         assertThat(row.getString("website_id")).isEqualTo(websiteId.toString())
         assertThat(row.getString("session_id")).isEqualTo("session-abc")
-        assertThat(row.getString("created_at")).isEqualTo(createdAt.toString())
+        assertThat(row.getLong("created_at")).isEqualTo(createdAtMicros)
         assertThat(row.getString("url_path")).isEqualTo("/page")
         assertThat(row.getString("url_query")).isEqualTo("?q=test")
         assertThat(row.getString("referrer_path")).isEqualTo("/home")
@@ -103,6 +105,7 @@ class RowMapperTest {
         assertThat(first.getString("data_key")).isEqualTo("color")
         assertThat(first.getString("string_value")).isEqualTo("blue")
         assertThat(first.getInt("data_type")).isEqualTo(1)
+        assertThat(first.getLong("created_at")).isEqualTo(createdAtMicros)
 
         val second = rows[1]
         assertThat(second.getString("data_key")).isEqualTo("count")
@@ -130,7 +133,7 @@ class RowMapperTest {
         assertThat(row.getString("country")).isEqualTo("NO")
         assertThat(row.getString("distinct_id")).isEqualTo("user-123")
         assertThat(row.getString("hostname")).isEqualTo("app.nav.no")
-        assertThat(row.getString("created_at")).isEqualTo(createdAt.toString())
+        assertThat(row.getLong("created_at")).isEqualTo(createdAtMicros)
     }
 
     @Test
@@ -146,6 +149,7 @@ class RowMapperTest {
         assertThat(row.getString("string_value")).isEqualTo("admin")
         assertThat(row.getInt("data_type")).isEqualTo(1)
         assertThat(row.getString("distinct_id")).isEqualTo("user-123")
+        assertThat(row.getLong("created_at")).isEqualTo(createdAtMicros)
     }
 
     @Test
@@ -156,12 +160,13 @@ class RowMapperTest {
 
     @Test
     fun `toWebsiteRow maps all fields correctly`() {
+        val updatedAt = Instant.parse("2026-03-30T14:00:00Z")
         val websiteChangeEvent = WebsiteChangeEvent(
             website = Website(
                 websiteId = UUID.fromString("ca2a6d29-686c-428b-9d80-651eac925bdb"),
                 name = "Test Website",
                 domain = "test.nav.no",
-                updatedAt = Instant.parse("2026-03-30T14:00:00Z")
+                updatedAt = updatedAt
             ),
             status = WebsiteEventStatus.CREATE
         )
@@ -171,7 +176,7 @@ class RowMapperTest {
         assertThat(row.getString("website_id")).isEqualTo("ca2a6d29-686c-428b-9d80-651eac925bdb")
         assertThat(row.getString("name")).isEqualTo("Test Website")
         assertThat(row.getString("domain")).isEqualTo("test.nav.no")
-        assertThat(row.getString("updated_at")).isEqualTo("2026-03-30T14:00:00Z")
+        assertThat(row.getLong("updated_at")).isEqualTo(TimeUnit.SECONDS.toMicros(updatedAt.epochSecond))
         assertThat(row.has("share_id")).isFalse()
         assertThat(row.has("reset_at")).isFalse()
         assertThat(row.has("user_id")).isFalse()

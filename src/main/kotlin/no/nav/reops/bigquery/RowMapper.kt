@@ -3,13 +3,20 @@ package no.nav.reops.bigquery
 import no.nav.reops.event.EnrichedEvent
 import no.nav.reops.event.WebsiteChangeEvent
 import org.json.JSONObject
+import java.time.Instant
+import java.util.concurrent.TimeUnit
 
 /**
  * Maps [EnrichedEvent] to flat [JSONObject] rows for each BigQuery table.
  *
  * The column names use snake_case to match the BigQuery table schemas.
+ * TIMESTAMP columns use microseconds since epoch as required by the
+ * BigQuery Storage Write API's JsonStreamWriter.
  */
 object RowMapper {
+
+    private fun Instant.toMicros(): Long =
+        TimeUnit.SECONDS.toMicros(epochSecond) + TimeUnit.NANOSECONDS.toMicros(nano.toLong())
 
     fun toWebsiteEventRow(event: EnrichedEvent): JSONObject {
         val we = event.websiteEvent
@@ -17,7 +24,7 @@ object RowMapper {
             put("event_id", we.eventId.toString())
             put("website_id", event.websiteId.toString())
             put("session_id", event.sessionId)
-            put("created_at", event.createdAt.toString())
+            put("created_at", event.createdAt.toMicros())
             put("url_path", we.urlPath)
             put("url_query", we.urlQuery)
             put("referrer_path", we.referrerPath)
@@ -41,9 +48,9 @@ object RowMapper {
                 put("data_key", entry.dataKey)
                 put("string_value", entry.stringValue)
                 put("number_value", entry.numberValue)
-                put("date_value", entry.dateValue?.toString())
+                entry.dateValue?.let { put("date_value", it.toMicros()) }
                 put("data_type", entry.dataType)
-                put("created_at", event.createdAt.toString())
+                put("created_at", event.createdAt.toMicros())
             }
         }
     }
@@ -59,7 +66,7 @@ object RowMapper {
             put("screen", s.screen)
             put("language", s.language)
             put("country", s.country)
-            put("created_at", event.createdAt.toString())
+            put("created_at", event.createdAt.toMicros())
             put("distinct_id", s.distinctId)
             put("hostname", event.websiteEvent.hostname)
         }
@@ -75,9 +82,9 @@ object RowMapper {
                 put("data_key", entry.dataKey)
                 put("string_value", entry.stringValue)
                 put("number_value", entry.numberValue)
-                put("date_value", entry.dateValue?.toString())
+                entry.dateValue?.let { put("date_value", it.toMicros()) }
                 put("data_type", entry.dataType)
-                put("created_at", event.createdAt.toString())
+                put("created_at", event.createdAt.toMicros())
                 put("distinct_id", entry.distinctId)
             }
         }
@@ -89,7 +96,7 @@ object RowMapper {
             put("website_id", w.websiteId.toString())
             put("name", w.name)
             put("domain", w.domain)
-            put("updated_at", w.updatedAt.toString())
+            put("updated_at", w.updatedAt.toMicros())
         }
     }
 }
