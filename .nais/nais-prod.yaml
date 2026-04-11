@@ -36,6 +36,7 @@ spec:
   kafka:
     pool: nav-prod
   accessPolicy:
+    outbound:
       external:
         - host: nav-prod-kafka-nav-prod.aivencloud.com
   env:
