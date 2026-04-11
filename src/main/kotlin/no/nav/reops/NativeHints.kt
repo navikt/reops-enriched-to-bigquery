@@ -74,6 +74,13 @@ class NativeHintsRegistrar : RuntimeHintsRegistrar {
             }
         }
 
+        // Register OperatingSystemMXBean so Micrometer ProcessorMetrics can reflectively
+        // invoke getCpuLoad() / getProcessCpuLoad() for system.cpu.usage and process.cpu.usage gauges.
+        reflection.registerType(
+            com.sun.management.OperatingSystemMXBean::class.java,
+            MemberCategory.INVOKE_PUBLIC_METHODS,
+        )
+
         // Register Kafka serializer/deserializer classes referenced by name in application.yaml.
         // Spring binds these via Class.forName() which requires reflection registration in native images.
         listOf(
