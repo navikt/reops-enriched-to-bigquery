@@ -74,6 +74,21 @@ class NativeHintsRegistrar : RuntimeHintsRegistrar {
             }
         }
 
+        // Register Kafka serializer/deserializer classes referenced by name in application.yaml.
+        // Spring binds these via Class.forName() which requires reflection registration in native images.
+        listOf(
+            org.apache.kafka.common.serialization.StringDeserializer::class.java,
+            org.apache.kafka.common.serialization.StringSerializer::class.java,
+            org.springframework.kafka.support.serializer.JacksonJsonDeserializer::class.java,
+            org.springframework.kafka.support.serializer.JacksonJsonSerializer::class.java,
+        ).forEach { clazz ->
+            reflection.registerType(
+                clazz,
+                MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+                MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+            )
+        }
+
         // Register LZ4 / XXHash classes used by Kafka (loaded via reflection).
         // Kafka accesses the static INSTANCE field reflectively, so we register the field explicitly.
         listOf(
