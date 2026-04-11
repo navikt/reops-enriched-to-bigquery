@@ -1,0 +1,54 @@
+apiVersion: nais.io/v1alpha1
+kind: Application
+metadata:
+  name: reops-bigquery-consumer
+  namespace: team-researchops
+  labels:
+    team: team-researchops
+spec:
+  image: "{{ image }}"
+  port: 8080
+  envFrom:
+    - secret: umami-bigquery
+  liveness:
+    path: /internal/health
+    initialDelay: 30
+  readiness:
+    path: /internal/health
+    initialDelay: 5
+  replicas:
+    min: 2
+    max: 10
+#    scalingStrategy:
+#      kafka:
+#        topic: team-researchops.analytics-enriched
+#        consumerGroup: reops-bigquery-consumer
+#        threshold: 100
+  prometheus:
+    enabled: true
+    path: /internal/prometheus
+  resources:
+    limits:
+      memory: 256Mi
+    requests:
+      cpu: "400m"
+      memory: 124Mi
+  kafka:
+    pool: nav-prod
+  accessPolicy:
+    outbound:
+      rules:
+        - application: reops-opensearch-instance
+      external:
+        - host: nav-prod-kafka-nav-prod.aivencloud.com
+  env:
+    - name: SPRING_PROFILES_ACTIVE
+      value: kubernetes
+    - name: GCP_TEAM_PROJECT_ID
+      value: "team-researchops-prod-01d6"
+    - name: JAVA_TOOL_OPTIONS
+      value: >-
+        -XX:+UseZGC
+        -XX:MaxRAMPercentage=70
+        -XX:InitialRAMPercentage=50
+        -XX:+ExitOnOutOfMemoryError
