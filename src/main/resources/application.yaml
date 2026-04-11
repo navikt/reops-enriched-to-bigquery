@@ -57,10 +57,9 @@ reops:
 logging:
   level:
     root: INFO
-    org.springframework.web: WARN
-    no.nav.reops: INFO
-    org.apache.kafka.clients.NetworkClient: WARN
-    org.apache.kafka.clients.Metadata: WARN
-    org.apache.kafka.common.config.AbstractConfig: WARN
+    org.springframework: WARN
+    org.apache: WARN
+    io.grpc: WARN
+    io.micrometer: WARN
     com.google.cloud.bigquery.storage.v1: WARN
-    io.grpc.netty.shaded: WARN
+    no.nav.reops: INFO
