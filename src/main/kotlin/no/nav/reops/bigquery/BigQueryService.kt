@@ -87,16 +87,31 @@ class BigQueryService(
 
     private fun writeToTable(table: String, rows: JSONArray) {
         val tablePath = TableName.of(projectId, datasetName, table)
+        LOG.debug("Writing {} rows to {}", rows.length(), tablePath)
 
-        val writeStream = bigQueryWriteClient.createWriteStream(
-            CreateWriteStreamRequest.newBuilder()
-                .setParent(tablePath.toString())
-                .setWriteStream(WriteStream.newBuilder().setType(WriteStream.Type.PENDING).build())
-                .build()
-        )
+        val writeStream = try {
+            bigQueryWriteClient.createWriteStream(
+                CreateWriteStreamRequest.newBuilder()
+                    .setParent(tablePath.toString())
+                    .setWriteStream(WriteStream.newBuilder().setType(WriteStream.Type.PENDING).build())
+                    .build()
+            )
+        } catch (ex: Exception) {
+            throw RuntimeException("Failed to create write stream for $table ($tablePath)", ex)
+        }
 
-        JsonStreamWriter.newBuilder(writeStream.name, writeStream.tableSchema, bigQueryWriteClient).build().use { writer ->
-            writer.append(rows).get()
+        try {
+            JsonStreamWriter.newBuilder(writeStream.name, writeStream.tableSchema, bigQueryWriteClient).build().use { writer ->
+                val response = writer.append(rows).get()
+                if (response.hasError()) {
+                    throw RuntimeException(
+                        "BigQuery append failed for $table: ${response.error.code} ${response.error.message}"
+                    )
+                }
+            }
+        } catch (ex: java.util.concurrent.ExecutionException) {
+            val cause = ex.cause ?: ex
+            throw RuntimeException("BigQuery append failed for $table: ${cause.message}", cause)
         }
 
         bigQueryWriteClient.finalizeWriteStream(writeStream.name)
