@@ -93,6 +93,15 @@ class RowMapperTest {
     }
 
     @Test
+    fun `toWebsiteEventRow handles null visitId`() {
+        val noVisitId = event.copy(websiteEvent = event.websiteEvent.copy(visitId = null))
+        val row = RowMapper.toWebsiteEventRow(noVisitId)
+
+        assertThat(row.optString("visit_id", "")).isEmpty()
+        assertThat(row.getString("event_id")).isEqualTo(eventId.toString())
+    }
+
+    @Test
     fun `toEventDataRows produces one row per entry`() {
         val rows = RowMapper.toEventDataRows(event)
 

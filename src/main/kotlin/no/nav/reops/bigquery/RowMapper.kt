@@ -33,7 +33,7 @@ object RowMapper {
             put("page_title", we.pageTitle)
             put("event_type", we.eventType)
             put("event_name", we.eventName)
-            put("visit_id", we.visitId.toString())
+            put("visit_id", we.visitId?.toString())
             put("hostname", we.hostname)
         }
     }
