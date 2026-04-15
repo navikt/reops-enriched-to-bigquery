@@ -76,7 +76,7 @@ class DltHandlerTest {
                 pageTitle = "Test",
                 referrerPath = null,
                 referrerDomain = null,
-                visitId = UUID.randomUUID(),
+                visitId = UUID.randomUUID().toString(),
                 hostname = "localhost"
             ),
             session = Session(

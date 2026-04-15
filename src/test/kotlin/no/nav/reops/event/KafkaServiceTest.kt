@@ -164,7 +164,7 @@ class KafkaServiceTest {
                 pageTitle = "Nav Webapps | Snarveier",
                 referrerPath = null,
                 referrerDomain = null,
-                visitId = UUID.randomUUID(),
+                visitId = UUID.randomUUID().toString(),
                 hostname = "felgen.intern.nav.no"
             ),
             session = Session(

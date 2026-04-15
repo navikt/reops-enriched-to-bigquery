@@ -68,7 +68,7 @@ class EndeTilEndeTest {
                 pageTitle = "Test Page",
                 referrerPath = "/",
                 referrerDomain = "example.com",
-                visitId = UUID.randomUUID(),
+                visitId = UUID.randomUUID().toString(),
                 hostname = "localhost"
             ),
             session = Session(
@@ -111,7 +111,7 @@ class EndeTilEndeTest {
                 pageTitle = "Test Page",
                 referrerPath = "/",
                 referrerDomain = "example.com",
-                visitId = UUID.randomUUID(),
+                visitId = UUID.randomUUID().toString(),
                 hostname = "localhost",
                 eventData = listOf(
                     EventDataEntry(eventDataId = UUID.randomUUID(), dataKey = "hest", dataType = 1, stringValue = "er best"),

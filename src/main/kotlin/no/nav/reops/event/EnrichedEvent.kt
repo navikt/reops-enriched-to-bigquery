@@ -25,7 +25,7 @@ data class WebsiteEvent(
     /** 1 = page view, 2 = custom event */
     val eventType: Int,
     val eventName: String? = null,
-    val visitId: UUID? = null,
+    val visitId: String? = null,
     val hostname: String? = null,
     val eventData: List<EventDataEntry>? = null
 )
