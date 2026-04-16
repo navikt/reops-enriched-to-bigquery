@@ -39,7 +39,7 @@ dependencies {
 	implementation("tools.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib")
-	implementation("at.yawk.lz4:lz4-java:1.10.4")
+	implementation("at.yawk.lz4:lz4-java:1.11.0")
 	implementation("io.micrometer:micrometer-registry-prometheus")
 
 	implementation(platform("com.google.cloud:libraries-bom:26.79.0"))
