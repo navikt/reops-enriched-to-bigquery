@@ -11,8 +11,8 @@ class RowMapperTest {
 
     private val websiteId = UUID.fromString("1dbfe4e9-bf8b-45d9-9305-928f22200bc0")
     private val eventId = UUID.fromString("aaaaaaaa-1111-2222-3333-444444444444")
-    private val visitId = UUID.fromString("bbbbbbbb-1111-2222-3333-444444444444")
-    private val sessionId = UUID.fromString("dddddddd-1111-2222-3333-444444444444")
+    private val visitId = "bbbbbbbb-1111-2222-3333-444444444444"
+    private val sessionId = "dddddddd-1111-2222-3333-444444444444"
     private val createdAt = Instant.parse("2026-03-30T12:00:00Z")
     private val createdAtMicros = TimeUnit.SECONDS.toMicros(createdAt.epochSecond)
 
@@ -89,7 +89,7 @@ class RowMapperTest {
         assertThat(row.getString("page_title")).isEqualTo("Test Page")
         assertThat(row.getInt("event_type")).isEqualTo(2)
         assertThat(row.getString("event_name")).isEqualTo("click")
-        assertThat(row.getString("visit_id")).isEqualTo(visitId.toString())
+        assertThat(row.getString("visit_id")).isEqualTo(visitId)
         assertThat(row.getString("hostname")).isEqualTo("app.nav.no")
     }
 

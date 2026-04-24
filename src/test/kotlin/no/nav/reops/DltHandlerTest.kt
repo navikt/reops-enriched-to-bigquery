@@ -66,7 +66,7 @@ class DltHandlerTest {
         val websiteId = UUID.randomUUID()
         val event = EnrichedEvent(
             websiteId = websiteId,
-            sessionId = UUID.randomUUID(),
+            sessionId = UUID.randomUUID().toString(),
             createdAt = Instant.now(),
             websiteEvent = WebsiteEvent(
                 eventId = UUID.randomUUID(),
@@ -76,7 +76,7 @@ class DltHandlerTest {
                 pageTitle = "Test",
                 referrerPath = null,
                 referrerDomain = null,
-                visitId = UUID.randomUUID(),
+                visitId = UUID.randomUUID().toString(),
                 hostname = "localhost"
             ),
             session = Session(

@@ -9,7 +9,7 @@ import java.util.UUID
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 data class EnrichedEvent(
     val websiteId: UUID,
-    val sessionId: UUID? = null,
+    val sessionId: String? = null,
     val createdAt: Instant,
     val websiteEvent: WebsiteEvent,
     val session: Session,
@@ -29,7 +29,7 @@ data class WebsiteEvent(
     /** 1 = page view, 2 = custom event */
     val eventType: Int,
     val eventName: String? = null,
-    val visitId: UUID? = null,
+    val visitId: String? = null,
     val hostname: String? = null,
     val eventData: List<EventDataEntry>? = null
 )
@@ -63,7 +63,7 @@ data class EventDataEntry(
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 data class SessionDataEntry(
     val sessionDataId: UUID,
-    val sessionId: UUID,
+    val sessionId: String,
     val dataKey: String,
     val stringValue: String? = null,
     val numberValue: Double? = null,
