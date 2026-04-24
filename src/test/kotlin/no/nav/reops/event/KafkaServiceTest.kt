@@ -154,7 +154,7 @@ class KafkaServiceTest {
         val websiteId = UUID.fromString("1dbfe4e9-bf8b-45d9-9305-928f22200bc0")
         return EnrichedEvent(
             websiteId = websiteId,
-            sessionId = "abc123",
+            sessionId = UUID.randomUUID(),
             createdAt = Instant.now(),
             websiteEvent = WebsiteEvent(
                 eventId = UUID.randomUUID(),
@@ -164,7 +164,7 @@ class KafkaServiceTest {
                 pageTitle = "Nav Webapps | Snarveier",
                 referrerPath = null,
                 referrerDomain = null,
-                visitId = UUID.randomUUID().toString(),
+                visitId = UUID.randomUUID(),
                 hostname = "felgen.intern.nav.no"
             ),
             session = Session(

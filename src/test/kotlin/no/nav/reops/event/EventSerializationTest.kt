@@ -60,7 +60,7 @@ class EventSerializationTest {
         val websiteId = UUID.fromString("1dbfe4e9-bf8b-45d9-9305-928f22200bc0")
         return EnrichedEvent(
             websiteId = websiteId,
-            sessionId = "abc123",
+            sessionId = UUID.randomUUID(),
             createdAt = Instant.parse("2026-01-01T00:00:00Z"),
             websiteEvent = WebsiteEvent(
                 eventId = UUID.randomUUID(),
@@ -70,7 +70,7 @@ class EventSerializationTest {
                 pageTitle = "Test Page",
                 referrerPath = null,
                 referrerDomain = null,
-                visitId = UUID.randomUUID().toString(),
+                visitId = UUID.randomUUID(),
                 hostname = "localhost",
                 eventData = eventData
             ),

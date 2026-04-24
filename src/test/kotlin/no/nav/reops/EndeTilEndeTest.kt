@@ -58,7 +58,7 @@ class EndeTilEndeTest {
         val websiteId = UUID.randomUUID()
         val event = EnrichedEvent(
             websiteId = websiteId,
-            sessionId = "abc123",
+            sessionId = UUID.randomUUID(),
             createdAt = Instant.now(),
             websiteEvent = WebsiteEvent(
                 eventId = UUID.randomUUID(),
@@ -68,7 +68,7 @@ class EndeTilEndeTest {
                 pageTitle = "Test Page",
                 referrerPath = "/",
                 referrerDomain = "example.com",
-                visitId = UUID.randomUUID().toString(),
+                visitId = UUID.randomUUID(),
                 hostname = "localhost"
             ),
             session = Session(
@@ -101,7 +101,7 @@ class EndeTilEndeTest {
         val websiteId = UUID.randomUUID()
         val event = EnrichedEvent(
             websiteId = websiteId,
-            sessionId = "abc123",
+            sessionId = UUID.randomUUID(),
             createdAt = Instant.now(),
             websiteEvent = WebsiteEvent(
                 eventId = UUID.randomUUID(),
@@ -111,7 +111,7 @@ class EndeTilEndeTest {
                 pageTitle = "Test Page",
                 referrerPath = "/",
                 referrerDomain = "example.com",
-                visitId = UUID.randomUUID().toString(),
+                visitId = UUID.randomUUID(),
                 hostname = "localhost",
                 eventData = listOf(
                     EventDataEntry(eventDataId = UUID.randomUUID(), dataKey = "hest", dataType = 1, stringValue = "er best"),

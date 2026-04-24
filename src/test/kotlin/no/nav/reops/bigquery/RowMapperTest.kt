@@ -11,13 +11,14 @@ class RowMapperTest {
 
     private val websiteId = UUID.fromString("1dbfe4e9-bf8b-45d9-9305-928f22200bc0")
     private val eventId = UUID.fromString("aaaaaaaa-1111-2222-3333-444444444444")
-    private val visitId = "bbbbbbbb-1111-2222-3333-444444444444"
+    private val visitId = UUID.fromString("bbbbbbbb-1111-2222-3333-444444444444")
+    private val sessionId = UUID.fromString("dddddddd-1111-2222-3333-444444444444")
     private val createdAt = Instant.parse("2026-03-30T12:00:00Z")
     private val createdAtMicros = TimeUnit.SECONDS.toMicros(createdAt.epochSecond)
 
     private val event = EnrichedEvent(
         websiteId = websiteId,
-        sessionId = "session-abc",
+        sessionId = sessionId,
         createdAt = createdAt,
         websiteEvent = WebsiteEvent(
             eventId = eventId,
@@ -61,7 +62,7 @@ class RowMapperTest {
             sessionData = listOf(
                 SessionDataEntry(
                     sessionDataId = UUID.fromString("eeeeeeee-1111-2222-3333-444444444444"),
-                    sessionId = "session-abc",
+                    sessionId = sessionId,
                     dataKey = "role",
                     stringValue = "admin",
                     numberValue = null,
@@ -79,7 +80,7 @@ class RowMapperTest {
 
         assertThat(row.getString("event_id")).isEqualTo(eventId.toString())
         assertThat(row.getString("website_id")).isEqualTo(websiteId.toString())
-        assertThat(row.getString("session_id")).isEqualTo("session-abc")
+        assertThat(row.getString("session_id")).isEqualTo(sessionId.toString())
         assertThat(row.getLong("created_at")).isEqualTo(createdAtMicros)
         assertThat(row.getString("url_path")).isEqualTo("/page")
         assertThat(row.getString("url_query")).isEqualTo("?q=test")
@@ -88,7 +89,7 @@ class RowMapperTest {
         assertThat(row.getString("page_title")).isEqualTo("Test Page")
         assertThat(row.getInt("event_type")).isEqualTo(2)
         assertThat(row.getString("event_name")).isEqualTo("click")
-        assertThat(row.getString("visit_id")).isEqualTo(visitId)
+        assertThat(row.getString("visit_id")).isEqualTo(visitId.toString())
         assertThat(row.getString("hostname")).isEqualTo("app.nav.no")
     }
 
@@ -132,7 +133,7 @@ class RowMapperTest {
     fun `toSessionRow maps flat fields correctly`() {
         val row = RowMapper.toSessionRow(event)
 
-        assertThat(row.getString("session_id")).isEqualTo("session-abc")
+        assertThat(row.getString("session_id")).isEqualTo(sessionId.toString())
         assertThat(row.getString("website_id")).isEqualTo(websiteId.toString())
         assertThat(row.getString("browser")).isEqualTo("Chrome")
         assertThat(row.getString("os")).isEqualTo("macOS")
@@ -152,7 +153,7 @@ class RowMapperTest {
         assertThat(rows).hasSize(1)
         val row = rows[0]
         assertThat(row.getString("session_data_id")).isEqualTo("eeeeeeee-1111-2222-3333-444444444444")
-        assertThat(row.getString("session_id")).isEqualTo("session-abc")
+        assertThat(row.getString("session_id")).isEqualTo(sessionId.toString())
         assertThat(row.getString("website_id")).isEqualTo(websiteId.toString())
         assertThat(row.getString("data_key")).isEqualTo("role")
         assertThat(row.getString("string_value")).isEqualTo("admin")

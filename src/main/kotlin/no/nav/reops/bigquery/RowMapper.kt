@@ -23,7 +23,7 @@ object RowMapper {
         return JSONObject().apply {
             put("event_id", we.eventId.toString())
             put("website_id", event.websiteId.toString())
-            put("session_id", event.sessionId)
+            put("session_id", event.sessionId?.toString())
             put("created_at", event.createdAt.toMicros())
             put("url_path", we.urlPath)
             put("url_query", we.urlQuery)
@@ -33,7 +33,7 @@ object RowMapper {
             put("page_title", we.pageTitle)
             put("event_type", we.eventType)
             put("event_name", we.eventName)
-            put("visit_id", we.visitId)
+            put("visit_id", we.visitId?.toString())
             put("hostname", we.hostname)
         }
     }
@@ -58,7 +58,7 @@ object RowMapper {
     fun toSessionRow(event: EnrichedEvent): JSONObject {
         val s = event.session
         return JSONObject().apply {
-            put("session_id", event.sessionId)
+            put("session_id", event.sessionId?.toString())
             put("website_id", event.websiteId.toString())
             put("browser", s.browser)
             put("os", s.os)
@@ -78,7 +78,7 @@ object RowMapper {
             JSONObject().apply {
                 put("session_data_id", entry.sessionDataId.toString())
                 put("website_id", event.websiteId.toString())
-                put("session_id", entry.sessionId)
+                put("session_id", entry.sessionId.toString())
                 put("data_key", entry.dataKey)
                 put("string_value", entry.stringValue)
                 put("number_value", entry.numberValue)

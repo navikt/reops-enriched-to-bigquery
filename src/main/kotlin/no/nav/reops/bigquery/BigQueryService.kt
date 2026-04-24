@@ -46,13 +46,15 @@ class BigQueryService(
             for (event in events) {
                 websiteEventRows.put(RowMapper.toWebsiteEventRow(event))
                 RowMapper.toEventDataRows(event).forEach { eventDataRows.put(it) }
-                sessionRows.put(RowMapper.toSessionRow(event))
-                RowMapper.toSessionDataRows(event).forEach { sessionDataRows.put(it) }
+                if (event.isNewSession) {
+                    sessionRows.put(RowMapper.toSessionRow(event))
+                    RowMapper.toSessionDataRows(event).forEach { sessionDataRows.put(it) }
+                }
             }
 
             writeToTable(websiteEventTable, websiteEventRows)
             if (eventDataRows.length() > 0) writeToTable(eventDataTable, eventDataRows)
-            writeToTable(sessionTable, sessionRows)
+            if (sessionRows.length() > 0) writeToTable(sessionTable, sessionRows)
             if (sessionDataRows.length() > 0) writeToTable(sessionDataTable, sessionDataRows)
 
             bigqueryRequestsSuccess.increment()
