@@ -1,9 +1,11 @@
 package no.nav.reops.event
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import java.time.Instant
 import java.util.UUID
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 data class EnrichedEvent(
     val websiteId: UUID,
@@ -14,6 +16,7 @@ data class EnrichedEvent(
     val isNewSession: Boolean = true
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 data class WebsiteEvent(
     val eventId: UUID,
@@ -31,6 +34,7 @@ data class WebsiteEvent(
     val eventData: List<EventDataEntry>? = null
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 data class Session(
     val browser: String? = null,
@@ -43,6 +47,7 @@ data class Session(
     val sessionData: List<SessionDataEntry>? = null
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 data class EventDataEntry(
     val eventDataId: UUID,
@@ -54,6 +59,7 @@ data class EventDataEntry(
     val dataType: Int,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 data class SessionDataEntry(
     val sessionDataId: UUID,
