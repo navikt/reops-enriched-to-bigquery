@@ -4,6 +4,8 @@ spring:
     topic: team-researchops.analytics-enriched
     website-topic: team-researchops.analytics-website
     dlt-topic: team-researchops.analytics-bigquery-dlt
+    listener:
+      auth-exception-retry-interval: 10s
     properties:
       security.protocol: SSL
       ssl.endpoint.identification.algorithm: ""
