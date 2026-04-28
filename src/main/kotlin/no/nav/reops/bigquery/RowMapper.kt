@@ -15,6 +15,15 @@ import java.util.concurrent.TimeUnit
  */
 object RowMapper {
 
+    private const val MAX_STRING_LENGTH = 500
+    private val LOG = org.slf4j.LoggerFactory.getLogger(RowMapper::class.java)
+
+    private fun truncate(value: String?, fieldName: String): String? {
+        if (value == null || value.length <= MAX_STRING_LENGTH) return value
+        LOG.warn("Truncating {} from {} to {} characters", fieldName, value.length, MAX_STRING_LENGTH)
+        return value.take(MAX_STRING_LENGTH)
+    }
+
     private fun Instant.toMicros(): Long =
         TimeUnit.SECONDS.toMicros(epochSecond) + TimeUnit.NANOSECONDS.toMicros(nano.toLong())
 
@@ -45,8 +54,8 @@ object RowMapper {
                 put("event_data_id", entry.eventDataId.toString())
                 put("website_id", event.websiteId.toString())
                 put("website_event_id", event.websiteEvent.eventId.toString())
-                put("data_key", entry.dataKey)
-                put("string_value", entry.stringValue)
+                put("data_key", truncate(entry.dataKey, "data_key"))
+                put("string_value", truncate(entry.stringValue, "string_value"))
                 put("number_value", entry.numberValue)
                 entry.dateValue?.let { put("date_value", it.toMicros()) }
                 put("data_type", entry.dataType)

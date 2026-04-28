@@ -3,6 +3,7 @@ package no.nav.reops.bigquery
 import com.google.cloud.bigquery.storage.v1.BatchCommitWriteStreamsRequest
 import com.google.cloud.bigquery.storage.v1.BigQueryWriteClient
 import com.google.cloud.bigquery.storage.v1.CreateWriteStreamRequest
+import com.google.cloud.bigquery.storage.v1.Exceptions
 import com.google.cloud.bigquery.storage.v1.JsonStreamWriter
 import com.google.cloud.bigquery.storage.v1.TableName
 import com.google.cloud.bigquery.storage.v1.WriteStream
@@ -113,6 +114,10 @@ class BigQueryService(
             }
         } catch (ex: java.util.concurrent.ExecutionException) {
             val cause = ex.cause ?: ex
+            if (cause is Exceptions.AppendSerializationError) {
+                val rowErrors = cause.rowIndexToErrorMessage
+                LOG.error("BigQuery row-level errors for {}: {}", table, rowErrors)
+            }
             throw RuntimeException("BigQuery append failed for $table: ${cause.message}", cause)
         }
 
