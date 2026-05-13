@@ -1,1 +1,1 @@
-rootProject.name = "reops-bigquery-consumer"
+rootProject.name = "reops-enriched-to-bigquery"

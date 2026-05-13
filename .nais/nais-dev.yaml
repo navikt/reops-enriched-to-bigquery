@@ -1,7 +1,7 @@
 apiVersion: nais.io/v1alpha1
 kind: Application
 metadata:
-  name: reops-bigquery-consumer
+  name: reops-enriched-to-bigquery
   namespace: team-researchops
   labels:
     team: team-researchops
@@ -9,7 +9,7 @@ spec:
   image: "{{ image }}"
   port: 8080
   envFrom:
-    - secret: reops-bigquery-consumer-sa
+    - secret: reops-enriched-to-bigquery-sa
   liveness:
     path: /internal/health
     initialDelay: 30
@@ -22,7 +22,7 @@ spec:
     scalingStrategy:
       kafka:
         topic: team-researchops.analytics-enriched
-        consumerGroup: reops-bigquery-consumer
+        consumerGroup: reops-enriched-to-bigquery
         threshold: 100
   prometheus:
     enabled: true

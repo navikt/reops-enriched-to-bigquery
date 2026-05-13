@@ -1,6 +1,6 @@
 spring:
   application:
-    name: reops-bigquery-consumer-test
+    name: reops-enriched-to-bigquery-test
   kafka:
     topic: test-topic
     website-topic: test-website-topic
