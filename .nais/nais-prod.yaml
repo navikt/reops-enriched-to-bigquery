@@ -19,11 +19,11 @@ spec:
   replicas:
     min: 2
     max: 10
-#    scalingStrategy:
-#      kafka:
-#        topic: team-researchops.analytics-enriched
-#        consumerGroup: reops-bigquery-consumer
-#        threshold: 100
+    scalingStrategy:
+      kafka:
+        topic: team-researchops.analytics-enriched
+        consumerGroup: reops-bigquery-consumer
+        threshold: 100
   prometheus:
     enabled: true
     path: /internal/prometheus
