@@ -30,4 +30,4 @@ jobs:
         env:
           CLUSTER: prod-gcp
           RESOURCE: .nais/nais-prod.yaml
-          VAR: image=${{ needs.docker.outputs.image }}
+          VAR: image=${{ github.event.inputs.image }},version=${{ github.event.inputs.version }}
