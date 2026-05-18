@@ -9,7 +9,7 @@ spec:
   image: "{{ image }}"
   port: 8080
   envFrom:
-    - secret: umami-bigquery
+    - secret: reops-enriched-to-bigquery-sa
   liveness:
     path: /internal/health
     initialDelay: 30
