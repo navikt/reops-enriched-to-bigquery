@@ -6,7 +6,7 @@ spring:
     website-topic: website
     listener:
       ack-mode: batch
-      concurrency: 6
+      concurrency: 3
       type: batch
       poll-timeout: 1000
     producer:
