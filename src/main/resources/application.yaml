@@ -21,9 +21,9 @@ spring:
       properties:
         spring.json.value.default.type: no.nav.reops.event.EnrichedEvent
         spring.json.trusted.packages: "*"
-        max.poll.records: 500
+        max.poll.records: 1000
         max.poll.interval.ms: 350000
-        fetch.max.bytes: 1048576  # 1 MB
+        fetch.max.bytes: 10485760  # 10 MB
         fetch.min.bytes: 1
         fetch.max.wait.ms: 1000   # 1 second batch window
   threads:
