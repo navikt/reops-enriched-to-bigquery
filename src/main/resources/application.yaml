@@ -44,6 +44,10 @@ management:
       base-path: /internal/
       exposure:
         include: info, health, metrics, prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        spring.kafka.listener: true
 
 reops:
   bigquery:
