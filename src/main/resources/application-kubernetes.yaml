@@ -22,7 +22,7 @@ spring:
 reops:
   bigquery:
     project: ${GCP_TEAM_PROJECT_ID}
-    dataset: umami_custom
+    dataset: umami
 
 logging:
   structured:
