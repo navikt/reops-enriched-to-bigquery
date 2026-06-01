@@ -1,11 +1,11 @@
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 
 plugins {
-	id("org.springframework.boot") version "4.0.5"
+	id("org.springframework.boot") version "4.0.6"
 	id("io.spring.dependency-management") version "1.1.7"
-	id("org.graalvm.buildtools.native") version "1.0.0"
-	kotlin("jvm") version "2.3.20"
-	kotlin("plugin.spring") version "2.3.20"
+	id("org.graalvm.buildtools.native") version "1.1.1"
+	kotlin("jvm") version "2.3.21"
+	kotlin("plugin.spring") version "2.3.21"
 }
 
 group = "no.nav.reops"
@@ -39,10 +39,10 @@ dependencies {
 	implementation("tools.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib")
-	implementation("at.yawk.lz4:lz4-java:1.10.4")
+	implementation("at.yawk.lz4:lz4-java:1.11.0")
 	implementation("io.micrometer:micrometer-registry-prometheus")
 
-	implementation(platform("com.google.cloud:libraries-bom:26.79.0"))
+	implementation(platform("com.google.cloud:libraries-bom:26.83.0"))
 	implementation("com.google.cloud:google-cloud-bigquerystorage")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
