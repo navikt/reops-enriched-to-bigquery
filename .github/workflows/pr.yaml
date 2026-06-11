@@ -20,7 +20,7 @@ jobs:
           distribution: temurin
           java-version: '25'
       - name: Setup gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.1.0
         with:
           cache-disabled: true
       - name: Run tests
