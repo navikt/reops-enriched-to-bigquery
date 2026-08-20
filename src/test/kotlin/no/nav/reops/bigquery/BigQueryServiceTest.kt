@@ -83,13 +83,24 @@ class BigQueryServiceTest {
     }
 
     @Test
-    fun `sendEvents - skips session tables when isNewSession is false`() {
-        stubSuccess(websiteEventWriter, eventDataWriter)
+    fun `sendEvents - skips session row but writes session_data when isNewSession is false and session data present`() {
+        stubSuccess(websiteEventWriter, eventDataWriter, sessionDataWriter)
 
         service.sendEvents(listOf(eventWithData(isNewSession = false)))
 
         verify(websiteEventWriter).append(any<JSONArray>())
         verify(eventDataWriter).append(any<JSONArray>())
+        verify(sessionWriter, never()).append(any<JSONArray>())
+        verify(sessionDataWriter).append(any<JSONArray>())
+    }
+
+    @Test
+    fun `sendEvents - skips both session tables when isNewSession is false and no session data`() {
+        stubSuccess(websiteEventWriter)
+
+        service.sendEvents(listOf(eventWithoutData(isNewSession = false)))
+
+        verify(websiteEventWriter).append(any<JSONArray>())
         verify(sessionWriter, never()).append(any<JSONArray>())
         verify(sessionDataWriter, never()).append(any<JSONArray>())
     }
