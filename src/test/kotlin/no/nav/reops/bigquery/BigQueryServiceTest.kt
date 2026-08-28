@@ -148,12 +148,13 @@ class BigQueryServiceTest {
         val error2 = RuntimeException("event_data failed")
         whenever(websiteEventWriter.append(any<JSONArray>())).thenReturn(ApiFutures.immediateFailedFuture(error1))
         whenever(eventDataWriter.append(any<JSONArray>())).thenReturn(ApiFutures.immediateFailedFuture(error2))
+        whenever(sessionDataWriter.append(any<JSONArray>())).thenReturn(ApiFutures.immediateFailedFuture(error2))
 
         assertThatThrownBy {
             service.sendEvents(listOf(eventWithData(isNewSession = false)))
         }.isInstanceOf(RuntimeException::class.java)
             .satisfies({ ex ->
-                assertThat(ex.cause!!.suppressed).hasSize(1)
+                assertThat(ex.cause!!.suppressed).hasSize(2)
             })
     }
 

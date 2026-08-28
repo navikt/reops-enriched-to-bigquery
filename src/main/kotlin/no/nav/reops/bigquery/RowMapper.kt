@@ -106,6 +106,7 @@ object RowMapper {
             put("name", w.name)
             put("domain", w.domain)
             put("updated_at", w.updatedAt.toMicros())
+            w.createdAt?.let { put("created_at", it.toMicros()) }
             put("team_id", w.teamId?.toString())
         }
     }
