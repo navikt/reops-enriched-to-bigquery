@@ -89,8 +89,8 @@ class BigQueryService(
                 if (event.isNewSession) {
                     newSessionCount++
                     sessionRows.put(RowMapper.toSessionRow(event))
-                    RowMapper.toSessionDataRows(event).forEach { sessionDataRows.put(it) }
                 }
+                RowMapper.toSessionDataRows(event).forEach { sessionDataRows.put(it) }
             }
 
             LOG.debug(
