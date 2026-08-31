@@ -52,6 +52,7 @@ class BigQueryService(
         meterRegistry.counter("bigquery_rows_written_total")
     private val bigqueryChunksTotal: Counter =
         meterRegistry.counter("bigquery_chunks_total")
+    private val meterRegistry: MeterRegistry = meterRegistry
 
     private val writers: Map<String, JsonStreamWriter> by lazy {
         writersOverride ?: run {
@@ -91,6 +92,14 @@ class BigQueryService(
                     sessionRows.put(RowMapper.toSessionRow(event))
                 }
                 RowMapper.toSessionDataRows(event).forEach { sessionDataRows.put(it) }
+
+                // Prefer explicit type from upstream; fall back to inference for old messages
+                val eventType = event.type ?: when {
+                    event.session.sessionData != null -> "identify"
+                    event.websiteEvent.eventType == 2 -> "custom_event"
+                    else -> "pageview"
+                }
+                meterRegistry.counter("bigquery_events_total", "type", eventType).increment()
             }
 
             LOG.debug(
@@ -213,6 +222,8 @@ class BigQueryService(
             ?: throw IllegalStateException("No writer initialized for table: $table")
 
         bigqueryChunksTotal.increment()
+        meterRegistry.counter("bigquery_table_rows_total", "table", table)
+            .increment(chunk.length().toDouble())
         LOG.debug("Appending chunk of {} rows to {}", chunk.length(), table)
 
         val apiFuture = try {

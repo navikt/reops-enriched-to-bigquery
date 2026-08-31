@@ -13,7 +13,9 @@ data class EnrichedEvent(
     val createdAt: Instant,
     val websiteEvent: WebsiteEvent,
     val session: Session,
-    val isNewSession: Boolean = true
+    val isNewSession: Boolean = true,
+    /** "pageview", "custom_event", or "identify" — populated by reops-clean-to-enriched */
+    val type: String? = null
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
