@@ -191,8 +191,116 @@ class RowMapperTest {
         assertThat(row.has("reset_at")).isFalse()
         assertThat(row.has("user_id")).isFalse()
         assertThat(row.has("created_at")).isFalse()
-        assertThat(row.has("deleted_at")).isFalse()
+        assertThat(row.has("deleted_at")).isTrue()
+        assertThat(row.isNull("deleted_at")).isTrue()
         assertThat(row.has("created_by")).isFalse()
         assertThat(row.has("team_id")).isFalse()
+    }
+
+    @Test
+    fun `toWebsiteRow writes null deleted_at for UPDATE status`() {
+        val updatedAt = Instant.parse("2026-03-30T15:00:00Z")
+        val websiteChangeEvent = WebsiteChangeEvent(
+            website = Website(
+                websiteId = websiteId,
+                name = "Updated Website",
+                domain = "updated.nav.no",
+                updatedAt = updatedAt,
+                createdAt = createdAt,
+                teamId = UUID.fromString("ffffffff-1111-2222-3333-444444444444")
+            ),
+            status = WebsiteEventStatus.UPDATE
+        )
+
+        val row = RowMapper.toWebsiteRow(websiteChangeEvent)
+
+        assertThat(row.getString("website_id")).isEqualTo(websiteId.toString())
+        assertThat(row.getString("team_id")).isEqualTo("ffffffff-1111-2222-3333-444444444444")
+        assertThat(row.getLong("created_at")).isEqualTo(createdAtMicros)
+        assertThat(row.has("deleted_at")).isTrue()
+        assertThat(row.isNull("deleted_at")).isTrue()
+    }
+
+    @Test
+    fun `toWebsiteRow writes tombstone deleted_at for DELETE status`() {
+        val updatedAt = Instant.parse("2026-03-30T16:00:00Z")
+        val deletedAt = Instant.parse("2026-03-30T16:05:00Z")
+        val websiteChangeEvent = WebsiteChangeEvent(
+            website = Website(
+                websiteId = websiteId,
+                name = "Deleted Website",
+                domain = "deleted.nav.no",
+                updatedAt = updatedAt,
+                createdAt = createdAt,
+                deletedAt = deletedAt
+            ),
+            status = WebsiteEventStatus.DELETE
+        )
+
+        val row = RowMapper.toWebsiteRow(websiteChangeEvent)
+
+        assertThat(row.getLong("deleted_at")).isEqualTo(TimeUnit.SECONDS.toMicros(deletedAt.epochSecond))
+        assertThat(row.getLong("updated_at")).isEqualTo(TimeUnit.SECONDS.toMicros(deletedAt.epochSecond))
+    }
+
+    @Test
+    fun `toWebsiteRow DELETE falls back to updatedAt when deletedAt is null`() {
+        val updatedAt = Instant.parse("2026-03-30T17:00:00Z")
+        val websiteChangeEvent = WebsiteChangeEvent(
+            website = Website(
+                websiteId = websiteId,
+                name = "Legacy Delete",
+                domain = "legacy.nav.no",
+                updatedAt = updatedAt
+            ),
+            status = WebsiteEventStatus.DELETE
+        )
+
+        val row = RowMapper.toWebsiteRow(websiteChangeEvent)
+
+        assertThat(row.getLong("deleted_at")).isEqualTo(TimeUnit.SECONDS.toMicros(updatedAt.epochSecond))
+        assertThat(row.getLong("updated_at")).isEqualTo(TimeUnit.SECONDS.toMicros(updatedAt.epochSecond))
+    }
+
+    @Test
+    fun `toWebsiteRow DELETE retains updated_at when it is later than deleted_at`() {
+        val updatedAt = Instant.parse("2026-03-30T18:00:00Z")
+        val deletedAt = Instant.parse("2026-03-30T18:05:00Z")
+        val websiteChangeEvent = WebsiteChangeEvent(
+            website = Website(
+                websiteId = websiteId,
+                name = "Out of order timestamps",
+                domain = "ooo.nav.no",
+                updatedAt = deletedAt,
+                deletedAt = updatedAt
+            ),
+            status = WebsiteEventStatus.DELETE
+        )
+
+        val row = RowMapper.toWebsiteRow(websiteChangeEvent)
+
+        // deleted_at (earlier) wins for deletion marker, but updated_at must not predate it
+        assertThat(row.getLong("deleted_at")).isEqualTo(TimeUnit.SECONDS.toMicros(updatedAt.epochSecond))
+        assertThat(row.getLong("updated_at")).isGreaterThanOrEqualTo(row.getLong("deleted_at"))
+    }
+
+    @Test
+    fun `toWebsiteRow DELETE with updatedAt equal to deletedAt`() {
+        val timestamp = Instant.parse("2026-03-30T19:00:00Z")
+        val websiteChangeEvent = WebsiteChangeEvent(
+            website = Website(
+                websiteId = websiteId,
+                name = "Same Timestamp",
+                domain = "same.nav.no",
+                updatedAt = timestamp,
+                deletedAt = timestamp
+            ),
+            status = WebsiteEventStatus.DELETE
+        )
+
+        val row = RowMapper.toWebsiteRow(websiteChangeEvent)
+
+        assertThat(row.getLong("deleted_at")).isEqualTo(TimeUnit.SECONDS.toMicros(timestamp.epochSecond))
+        assertThat(row.getLong("updated_at")).isEqualTo(TimeUnit.SECONDS.toMicros(timestamp.epochSecond))
     }
 }

@@ -2,6 +2,7 @@ package no.nav.reops.bigquery
 
 import no.nav.reops.event.EnrichedEvent
 import no.nav.reops.event.WebsiteChangeEvent
+import no.nav.reops.event.WebsiteEventStatus
 import org.json.JSONObject
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -101,13 +102,24 @@ object RowMapper {
 
     fun toWebsiteRow(event: WebsiteChangeEvent): JSONObject {
         val w = event.website
+        val deletedAt = if (event.status == WebsiteEventStatus.DELETE) {
+            w.deletedAt ?: w.updatedAt
+        } else {
+            null
+        }
+        val effectiveUpdatedAt = if (deletedAt != null && w.updatedAt.isBefore(deletedAt)) {
+            deletedAt
+        } else {
+            w.updatedAt
+        }
         return JSONObject().apply {
             put("website_id", w.websiteId.toString())
             put("name", w.name)
             put("domain", w.domain)
-            put("updated_at", w.updatedAt.toMicros())
+            put("updated_at", effectiveUpdatedAt.toMicros())
             w.createdAt?.let { put("created_at", it.toMicros()) }
             put("team_id", w.teamId?.toString())
+            put("deleted_at", deletedAt?.toMicros() ?: JSONObject.NULL)
         }
     }
 }
