@@ -11,7 +11,8 @@ data class Website(
     val domain: String,
     val updatedAt: Instant,
     val createdAt: Instant? = null,
-    val teamId: UUID? = null
+    val teamId: UUID? = null,
+    val deletedAt: Instant? = null
 )
 
 enum class WebsiteEventStatus {
