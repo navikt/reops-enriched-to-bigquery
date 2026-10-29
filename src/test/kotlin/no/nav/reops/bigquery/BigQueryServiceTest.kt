@@ -4,6 +4,7 @@ import com.google.api.core.ApiFutures
 import com.google.cloud.bigquery.storage.v1.AppendRowsResponse
 import com.google.cloud.bigquery.storage.v1.BigQueryWriteClient
 import com.google.cloud.bigquery.storage.v1.Exceptions.AppendSerializationError
+import com.google.cloud.bigquery.storage.v1.Exceptions.StreamWriterClosedException
 import com.google.cloud.bigquery.storage.v1.JsonStreamWriter
 import com.google.protobuf.Int64Value
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
@@ -244,6 +245,75 @@ class BigQueryServiceTest {
 
         val chunks = meterRegistry.find("bigquery_chunks_total").counter()
         assertThat(chunks?.count()).isEqualTo(4.0)
+    }
+
+    // ── writer recovery ───────────────────────────────────────────────────────
+
+    @Test
+    fun `sendEvents - recreates writer when existing writer is closed`() {
+        val replacementWriter: JsonStreamWriter = mock()
+        stubSuccess(replacementWriter)
+        whenever(websiteEventWriter.isClosed).thenReturn(true)
+
+        val recoverableService = BigQueryService(
+            bigQueryWriteClient = mock<BigQueryWriteClient>(),
+            projectId = "test-project",
+            datasetName = "test-dataset",
+            websiteEventTable = "website_event",
+            eventDataTable = "event_data",
+            sessionTable = "session",
+            sessionDataTable = "session_data",
+            websiteTable = "website",
+            meterRegistry = meterRegistry,
+            writersOverride = mapOf("website_event" to websiteEventWriter),
+            writerFactory = { replacementWriter },
+        )
+
+        recoverableService.sendEvents(listOf(eventWithoutData(isNewSession = false)))
+
+        verify(websiteEventWriter).close()
+        verify(websiteEventWriter, never()).append(any<JSONArray>())
+        verify(replacementWriter).append(any<JSONArray>())
+
+        val recreations = meterRegistry.find("bigquery_writer_recreations_total").counter()
+        assertThat(recreations?.count()).isEqualTo(1.0)
+    }
+
+    @Test
+    fun `sendEvents - evicts broken writer on StreamWriterClosedException and uses new writer on retry`() {
+        val replacementWriter: JsonStreamWriter = mock()
+        stubSuccess(replacementWriter)
+
+        val closedException: StreamWriterClosedException = mock()
+        whenever(websiteEventWriter.append(any<JSONArray>())).thenReturn(
+            ApiFutures.immediateFailedFuture(closedException)
+        )
+
+        val recoverableService = BigQueryService(
+            bigQueryWriteClient = mock<BigQueryWriteClient>(),
+            projectId = "test-project",
+            datasetName = "test-dataset",
+            websiteEventTable = "website_event",
+            eventDataTable = "event_data",
+            sessionTable = "session",
+            sessionDataTable = "session_data",
+            websiteTable = "website",
+            meterRegistry = meterRegistry,
+            writersOverride = mapOf("website_event" to websiteEventWriter),
+            writerFactory = { replacementWriter },
+        )
+
+        assertThatThrownBy {
+            recoverableService.sendEvents(listOf(eventWithoutData(isNewSession = false)))
+        }.isInstanceOf(RuntimeException::class.java)
+
+        recoverableService.sendEvents(listOf(eventWithoutData(isNewSession = false)))
+
+        verify(websiteEventWriter).close()
+        verify(replacementWriter).append(any<JSONArray>())
+
+        val recreations = meterRegistry.find("bigquery_writer_recreations_total").counter()
+        assertThat(recreations?.count()).isEqualTo(1.0)
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
