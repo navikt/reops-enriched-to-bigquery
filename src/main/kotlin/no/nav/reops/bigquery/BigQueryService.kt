@@ -188,6 +188,12 @@ class BigQueryService(
         }
     }
 
+    private data class AppendTask(
+        val table: String,
+        val writer: JsonStreamWriter?,
+        val future: CompletableFuture<Void>,
+    )
+
     /**
      * Fires all table writes in parallel. Each write is chunked internally.
      * Awaits all futures before returning — ensures Kafka offsets are only
@@ -196,18 +202,20 @@ class BigQueryService(
     private fun executeParallelWrites(writes: List<Pair<String, JSONArray>>) {
         val tasks = writes.flatMap { (table, rows) ->
             chunkRows(table, rows).map { chunk ->
-                table to appendChunkAsync(table, chunk)
+                appendChunkAsync(table, chunk)
             }
         }
 
         LOG.debug("Awaiting {} append futures across {} tables", tasks.size, writes.size)
 
+        val deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(APPEND_TIMEOUT_SECONDS)
         val errors = mutableListOf<Throwable>()
-        tasks.forEach { (table, future) ->
+        tasks.forEach { task ->
             try {
-                future.get(APPEND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                val remainingNanos = (deadlineNanos - System.nanoTime()).coerceAtLeast(0L)
+                task.future.get(remainingNanos, TimeUnit.NANOSECONDS)
             } catch (ex: TimeoutException) {
-                writers[table]?.let { evictWriterIfClosedOrBroken(table, it, ex) }
+                task.writer?.let { evictWriterIfClosedOrBroken(task.table, it, ex) }
                 errors.add(ex)
             } catch (ex: ExecutionException) {
                 errors.add(ex.cause ?: ex)
@@ -257,12 +265,12 @@ class BigQueryService(
         return chunks
     }
 
-    private fun appendChunkAsync(table: String, chunk: JSONArray): CompletableFuture<Void> {
+    private fun appendChunkAsync(table: String, chunk: JSONArray): AppendTask {
         val writer = try {
             getOrCreateWriter(table)
         } catch (ex: Exception) {
             LOG.error("Failed to initialize writer for table {}: {}", table, ex.message, ex)
-            return CompletableFuture<Void>().also { it.completeExceptionally(ex) }
+            return AppendTask(table, null, CompletableFuture<Void>().also { it.completeExceptionally(ex) })
         }
 
         bigqueryChunksTotal.increment()
@@ -275,7 +283,7 @@ class BigQueryService(
         } catch (ex: Exception) {
             evictWriterIfClosedOrBroken(table, writer, ex)
             LOG.error("Failed to submit append for table {}: {}", table, ex.message, ex)
-            return CompletableFuture<Void>().also { it.completeExceptionally(ex) }
+            return AppendTask(table, writer, CompletableFuture<Void>().also { it.completeExceptionally(ex) })
         }
 
         val result = CompletableFuture<Void>()
@@ -317,7 +325,7 @@ class BigQueryService(
             }
         }, Runnable::run)
 
-        return result
+        return AppendTask(table, writer, result)
     }
 
     @PreDestroy
