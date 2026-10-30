@@ -44,7 +44,7 @@ class KafkaConfiguration(
     fun commonErrorHandler(
         kafkaTemplate: KafkaTemplate<String, EnrichedEvent>,
         meterRegistry: MeterRegistry,
-        @Value("\${spring.kafka.retry.backoff-delay:300000}") backoffDelay: Long,
+        @Value("\${spring.kafka.retry.backoff-delay:5000}") backoffDelay: Long,
         @Value("\${spring.kafka.dlt-topic}") dltTopicName: String
     ): CommonErrorHandler {
         val dltCounter: Counter = Counter.builder("kafka_events_dlt_total").register(meterRegistry)
@@ -63,7 +63,7 @@ class KafkaConfiguration(
                 exception
             )
             dltRecoverer.accept(record, exception)
-        }, FixedBackOff(backoffDelay, 1)) // 1 retry = 2 total attempts
+        }, FixedBackOff(backoffDelay, 2)) // 2 retries = 3 total attempts
     }
 
     @Bean

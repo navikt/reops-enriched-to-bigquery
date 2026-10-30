@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import java.io.ByteArrayInputStream
+import java.time.Duration
 
 @Configuration
 class BigQueryConfiguration {
@@ -21,19 +22,26 @@ class BigQueryConfiguration {
     @Bean
     @Profile("!local")
     fun bigQueryWriteClient(): BigQueryWriteClient {
+        val channelProvider = BigQueryWriteSettings.defaultGrpcTransportProviderBuilder()
+            .setKeepAliveTimeDuration(Duration.ofSeconds(30))
+            .setKeepAliveTimeoutDuration(Duration.ofSeconds(10))
+            .setKeepAliveWithoutCalls(true)
+            .build()
+
+        val settingsBuilder = BigQueryWriteSettings.newBuilder()
+            .setTransportChannelProvider(channelProvider)
+
         val credentialsJson = System.getenv("bigquery-credentials")
         if (!credentialsJson.isNullOrBlank()) {
             LOG.info("Using credentials from bigquery-credentials secret (NAIS)")
             val credentials = ServiceAccountCredentials.fromStream(
                 ByteArrayInputStream(credentialsJson.toByteArray())
             )
-            val settings = BigQueryWriteSettings.newBuilder()
-                .setCredentialsProvider(FixedCredentialsProvider.create(credentials))
-                .build()
-            return BigQueryWriteClient.create(settings)
+            settingsBuilder.setCredentialsProvider(FixedCredentialsProvider.create(credentials))
+        } else {
+            LOG.info("Using application default credentials")
         }
-        LOG.info("Using application default credentials")
-        return BigQueryWriteClient.create()
+        return BigQueryWriteClient.create(settingsBuilder.build())
     }
 
     @Bean

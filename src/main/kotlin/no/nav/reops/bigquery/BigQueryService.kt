@@ -14,7 +14,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * Writes events to BigQuery using the Storage Write API with the DEFAULT stream.
@@ -22,7 +25,7 @@ import java.util.concurrent.ExecutionException
  * Design decisions:
  * - DEFAULT stream (at-least-once): eliminates CreateWriteStream quota cost (10,000/hour limit).
  *   Kafka batch semantics are already at-least-once, so no regression in delivery guarantees.
- * - Long-lived JsonStreamWriters: one per table, initialized at startup, reused across all batches.
+ * - Long-lived JsonStreamWriters: one per table, reused across batches and automatically recreated if closed.
  *   Google docs explicitly discourage short-lived connections.
  * - Parallel table writes: all tables appended concurrently via CompletableFuture.
  *   Wall time = max(table latency), not sum.
@@ -43,6 +46,7 @@ class BigQueryService(
     @Value("\${reops.bigquery.tables.website}") private val websiteTable: String,
     meterRegistry: MeterRegistry,
     writersOverride: Map<String, JsonStreamWriter>? = null,
+    private val writerFactory: ((String) -> JsonStreamWriter)? = null,
 ) {
     private val bigqueryRequestsSuccess: Counter =
         meterRegistry.counter("bigquery_requests_total", "result", "success")
@@ -52,23 +56,56 @@ class BigQueryService(
         meterRegistry.counter("bigquery_rows_written_total")
     private val bigqueryChunksTotal: Counter =
         meterRegistry.counter("bigquery_chunks_total")
+    private val bigqueryWriterRecreations: Counter =
+        meterRegistry.counter("bigquery_writer_recreations_total")
     private val meterRegistry: MeterRegistry = meterRegistry
 
-    private val writers: Map<String, JsonStreamWriter> by lazy {
-        writersOverride ?: run {
-            val tables = listOf(websiteEventTable, eventDataTable, sessionTable, sessionDataTable, websiteTable)
-            LOG.info(
-                "Initializing {} long-lived BigQuery DEFAULT stream writers for dataset {}.{}",
-                tables.size, projectId, datasetName
-            )
-            tables.associateWith { table ->
-                val tablePath = TableName.of(projectId, datasetName, table)
-                val streamName = "${tablePath}/_default"
-                LOG.info("Creating writer for stream: {}", streamName)
-                JsonStreamWriter.newBuilder(streamName, bigQueryWriteClient).build().also {
-                    LOG.info("Writer ready for table: {}", table)
+    private val writers = ConcurrentHashMap<String, JsonStreamWriter>().apply {
+        writersOverride?.let { putAll(it) }
+    }
+
+    private fun getOrCreateWriter(table: String): JsonStreamWriter {
+        return writers.compute(table) { _, existing ->
+            when {
+                existing == null -> createWriter(table)
+                existing.isClosed -> {
+                    LOG.warn("Writer for table {} is closed (writerId={}), recreating", table, existing.writerId)
+                    bigqueryWriterRecreations.increment()
+                    closeQuietly(table, existing)
+                    createWriter(table)
                 }
+                else -> existing
             }
+        }!!
+    }
+
+    private fun createWriter(table: String): JsonStreamWriter {
+        writerFactory?.let { return it(table) }
+        val tablePath = TableName.of(projectId, datasetName, table)
+        val streamName = "${tablePath}/_default"
+        LOG.info("Creating writer for stream: {}", streamName)
+        return JsonStreamWriter.newBuilder(streamName, bigQueryWriteClient).build().also {
+            LOG.info("Writer ready for table: {} (writerId={})", table, it.writerId)
+        }
+    }
+
+    private fun evictWriterIfClosedOrBroken(table: String, writer: JsonStreamWriter, cause: Throwable? = null) {
+        val shouldEvict = writer.isClosed ||
+            cause is Exceptions.StreamWriterClosedException ||
+            cause is Exceptions.MaximumRequestCallbackWaitTimeExceededException ||
+            cause is TimeoutException
+        if (shouldEvict && writers.remove(table, writer)) {
+            LOG.warn("Evicting closed/broken writer for table {} (writerId={})", table, writer.writerId)
+            bigqueryWriterRecreations.increment()
+            closeQuietly(table, writer)
+        }
+    }
+
+    private fun closeQuietly(table: String, writer: JsonStreamWriter) {
+        try {
+            writer.close()
+        } catch (ex: Exception) {
+            LOG.warn("Error closing writer for table {}: {}", table, ex.message)
         }
     }
 
@@ -151,24 +188,35 @@ class BigQueryService(
         }
     }
 
+    private data class AppendTask(
+        val table: String,
+        val writer: JsonStreamWriter?,
+        val future: CompletableFuture<Void>,
+    )
+
     /**
      * Fires all table writes in parallel. Each write is chunked internally.
      * Awaits all futures before returning — ensures Kafka offsets are only
      * committed after all data is durably written.
      */
     private fun executeParallelWrites(writes: List<Pair<String, JSONArray>>) {
-        val futures = writes.flatMap { (table, rows) ->
+        val tasks = writes.flatMap { (table, rows) ->
             chunkRows(table, rows).map { chunk ->
                 appendChunkAsync(table, chunk)
             }
         }
 
-        LOG.debug("Awaiting {} append futures across {} tables", futures.size, writes.size)
+        LOG.debug("Awaiting {} append futures across {} tables", tasks.size, writes.size)
 
+        val deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(APPEND_TIMEOUT_SECONDS)
         val errors = mutableListOf<Throwable>()
-        futures.forEach { future ->
+        tasks.forEach { task ->
             try {
-                future.get()
+                val remainingNanos = (deadlineNanos - System.nanoTime()).coerceAtLeast(0L)
+                task.future.get(remainingNanos, TimeUnit.NANOSECONDS)
+            } catch (ex: TimeoutException) {
+                task.writer?.let { evictWriterIfClosedOrBroken(task.table, it, ex) }
+                errors.add(ex)
             } catch (ex: ExecutionException) {
                 errors.add(ex.cause ?: ex)
             } catch (ex: Exception) {
@@ -217,9 +265,13 @@ class BigQueryService(
         return chunks
     }
 
-    private fun appendChunkAsync(table: String, chunk: JSONArray): CompletableFuture<Void> {
-        val writer = writers[table]
-            ?: throw IllegalStateException("No writer initialized for table: $table")
+    private fun appendChunkAsync(table: String, chunk: JSONArray): AppendTask {
+        val writer = try {
+            getOrCreateWriter(table)
+        } catch (ex: Exception) {
+            LOG.error("Failed to initialize writer for table {}: {}", table, ex.message, ex)
+            return AppendTask(table, null, CompletableFuture<Void>().also { it.completeExceptionally(ex) })
+        }
 
         bigqueryChunksTotal.increment()
         meterRegistry.counter("bigquery_table_rows_total", "table", table)
@@ -229,8 +281,9 @@ class BigQueryService(
         val apiFuture = try {
             writer.append(chunk)
         } catch (ex: Exception) {
+            evictWriterIfClosedOrBroken(table, writer, ex)
             LOG.error("Failed to submit append for table {}: {}", table, ex.message, ex)
-            return CompletableFuture<Void>().also { it.completeExceptionally(ex) }
+            return AppendTask(table, writer, CompletableFuture<Void>().also { it.completeExceptionally(ex) })
         }
 
         val result = CompletableFuture<Void>()
@@ -256,6 +309,7 @@ class BigQueryService(
                 }
             } catch (ex: ExecutionException) {
                 val cause = ex.cause ?: ex
+                evictWriterIfClosedOrBroken(table, writer, cause)
                 if (cause is Exceptions.AppendSerializationError) {
                     LOG.error(
                         "Serialization errors for table {} — row-level errors: {}",
@@ -265,25 +319,23 @@ class BigQueryService(
                 LOG.error("Append failed for table {}: {}", table, cause.message, cause)
                 result.completeExceptionally(cause)
             } catch (ex: Exception) {
+                evictWriterIfClosedOrBroken(table, writer, ex)
                 LOG.error("Unexpected error in append callback for table {}: {}", table, ex.message, ex)
                 result.completeExceptionally(ex)
             }
         }, Runnable::run)
 
-        return result
+        return AppendTask(table, writer, result)
     }
 
     @PreDestroy
     fun closeWriters() {
         LOG.info("Shutting down {} BigQuery stream writers", writers.size)
         writers.forEach { (table, writer) ->
-            try {
-                writer.close()
-                LOG.info("Writer closed for table: {}", table)
-            } catch (ex: Exception) {
-                LOG.warn("Error closing writer for table {}: {}", table, ex.message)
-            }
+            closeQuietly(table, writer)
+            LOG.info("Writer closed for table: {}", table)
         }
+        writers.clear()
     }
 
     private companion object {
@@ -294,5 +346,8 @@ class BigQueryService(
 
         /** Max bytes per AppendRows request. Hard limit is 20 MB; we stay at 18 MB. */
         private const val MAX_BYTES_PER_CHUNK = 18 * 1024 * 1024L
+
+        /** Max time to wait for a batch of AppendRows futures before failing fast. */
+        private const val APPEND_TIMEOUT_SECONDS = 60L
     }
 }
