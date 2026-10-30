@@ -44,6 +44,12 @@ spec:
       value: kubernetes
     - name: GCP_TEAM_PROJECT_ID
       value: "team-researchops-dev-4396"
+    # Log consumer group join/assignment (both loggers are WARN in application.yaml), so we can
+    # see which pod owns each partition of analytics-enriched and analytics-website.
+    - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_KAFKA_LISTENER
+      value: INFO
+    - name: LOGGING_LEVEL_ORG_APACHE_KAFKA_CLIENTS_CONSUMER_INTERNALS
+      value: INFO
     - name: JAVA_TOOL_OPTIONS
       value: >-
         -XX:+UseZGC
