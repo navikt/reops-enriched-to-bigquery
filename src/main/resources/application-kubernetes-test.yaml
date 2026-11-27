@@ -1,0 +1,13 @@
+spring:
+  kafka:
+    topic: team-researchops.analytics-test-enriched
+    website-topic: team-researchops.analytics-test-website
+    dlt-topic: team-researchops.analytics-test-bigquery-dlt
+    consumer:
+      group-id: reops-enriched-to-bigquery-test
+    listener:
+      concurrency: 1
+
+reops:
+  bigquery:
+    dataset: umami_test
